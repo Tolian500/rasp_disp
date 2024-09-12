@@ -48,9 +48,9 @@ def draw_test():
     draw.ellipse((125, 1, 158, 33), fill=(0, 255, 0))
 
     logging.info("draw text")
-    draw.text((1, 45), u'Hellow WaveShare', font=Font2, fill="BLACK")
-    draw.text((90, 82), u'0123456789', font=Font2, fill="RED")
-    draw.text((00, 85), u'你好微雪', font=Font3, fill="BLUE")
+    draw.text((1, 45), u'Hellow WaveShare ✔️', font=Font2, fill="BLACK")
+    draw.text((90, 82), u'0123456789 🎉🎉', font=Font2, fill="RED")
+    draw.text((00, 85), u'你好微雪 🤗⛱️', font=Font3, fill="BLUE")
     disp.ShowImage(image2)
 
 def image_test():
