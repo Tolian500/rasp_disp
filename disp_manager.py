@@ -19,8 +19,15 @@ class MockLCD:
         self.image = Image.new("RGB", (self.width, self.height), "WHITE")
         self.draw = ImageDraw.Draw(self.image)
 
-    def bl_DutyCycle(self, value):
-        print(f"Backlight set to {value}%")
+    def bl_DutyCycle(self, duty):
+        """
+        Set the backlight brightness.
+        """
+        if 0 <= duty <= 100:
+            # Assuming you are using PWM to control the backlight
+            self.pwm.set_pwm(self.BL_pin, 0, int(duty * 4095 / 100))
+        else:
+            logging.warning("Duty cycle should be between 0 and 100.")
 
     def ShowImage(self, image):
         image.show()  # Using PIL's built-in image viewer
