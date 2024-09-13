@@ -48,7 +48,7 @@ class Muscot:
         self.Font4 = ImageFont.truetype("./Font/Font03.ttf", 20)
         self.Font5 = ImageFont.truetype("./Font/Font04.ttf", 22)
         self.Font6 = ImageFont.truetype("./Font/OrbitronM.ttf", 22)
-        self.Font7 = ImageFont.truetype("./Font/OrbitronSB.ttf", 22)
+        self.Font7 = ImageFont.truetype("./Font/OrbitronSB.ttf", 18)
 
     def draw_test(self):
         image2 = Image.new("RGB", (self.disp.width, self.disp.height), "WHITE")
@@ -217,7 +217,7 @@ class Muscot:
 
     def show_moisture_with_text(self, current_level, text):
         # Create a new blank image with the screen size
-        image = Image.new("RGBA", (240, 135), (255, 255, 255, 255))
+        image = Image.new("RGBA", (240, 135), (39, 39, 39, 39))
         draw = ImageDraw.Draw(image)
 
         # Define margins and dimensions
@@ -240,16 +240,16 @@ class Muscot:
         # Optimal range (20% - 40%) with green lines
         good_top = bar_y + (100 - 40) * bar_height // 100
         good_bot = bar_y + (100 - 20) * bar_height // 100
-        draw.line([bar_x - 5, good_top, bar_x + bar_width + 5, good_top], fill="WHITE", width=1)
-        draw.line([bar_x - 5, good_bot, bar_x + bar_width + 5, good_bot], fill="WHITE", width=1)
+        draw.line([bar_x - 0, good_top, bar_x + bar_width + 0, good_top], fill="WHITE", width=2)
+        draw.line([bar_x - 0, good_bot, bar_x + bar_width + 0, good_bot], fill="WHITE", width=2)
 
         # Draw the current level as a white dash
         current_level_y = bar_y + (100 - current_level) * bar_height // 100
-        draw.line([bar_x - 5, current_level_y, bar_x + bar_width + 5, current_level_y], fill=(169, 191, 4), width=3)
+        draw.line([bar_x - 15, current_level_y, bar_x + bar_width + 0, current_level_y], fill=(169, 191, 4), width=3)
 
         # Draw the text at the bottom of the screen
-        text_position = (10, 0)
-        draw.text(text_position, text, font=self.Font7, fill="BLACK")
+        text_position = (10, 10)
+        draw.text(text_position, text, font=self.Font7, fill="WHITE")
 
         # Show the image
         self.disp.ShowImage(image.convert("RGB"))  # Convert to RGB before showing on display
@@ -264,7 +264,7 @@ if __name__ == "__main__":
         muscot = Muscot()
         # muscot.show_text(f"Current moist: {curent_moist}")
         # muscot.draw_moisture_bar(curent_moist)
-        muscot.show_moisture_with_text(35, f"Temp: 20°C \nMoist:  {curent_moist}%\nNext water:\nIn 2 Hours")
+        muscot.show_moisture_with_text(35, f"Status: Too wet\nTemp: 20°C \nMoist:  {curent_moist}%\nNext water:\nIn 2 Hours")
         time.sleep(10)
 
     except IOError as e:
