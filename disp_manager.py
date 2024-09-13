@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.DEBUG)
 WAIT_SECONDS = 2
 
 
-class Muscot:
+class Display:
     def __init__(self):
         # Raspberry Pi pin configuration:
         if IS_LINUX:
@@ -261,7 +261,7 @@ class Muscot:
 if __name__ == "__main__":
     try:
         curent_moist = 50
-        muscot = Muscot()
+        muscot = Display()
         # muscot.show_text(f"Current moist: {curent_moist}")
         # muscot.draw_moisture_bar(curent_moist)
         muscot.show_moisture_with_text(35, f"Status: Too wet\nTemp: 20°C \nMoist:  {curent_moist}%\nNext water:\nIn 2 Hours")
