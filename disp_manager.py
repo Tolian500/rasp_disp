@@ -3,6 +3,8 @@ import sys
 import time
 import logging
 import platform
+import pygame
+import sys
 
 try:
     import spidev as SPI
@@ -42,10 +44,10 @@ class Muscot:
 
         # Initialize fonts
         self.Font1 = ImageFont.truetype("./Font/Font00.ttf", 30)
-        self.Font2 = ImageFont.truetype("./Font/Font00.ttf", 25)
+        self.Font2 = ImageFont.truetype("./Font/Font01.ttf", 25)
         self.Font3 = ImageFont.truetype("./Font/Font02.ttf", 25)
-        self.Font4 = ImageFont.truetype("./Font/Font03.ttf", 25)
-        self.Font5 = ImageFont.truetype("./Font/Font03.ttf", 25)
+        self.Font4 = ImageFont.truetype("./Font/Font03.ttf", 20)
+        self.Font5 = ImageFont.truetype("./Font/Font04.ttf", 20)
 
     def draw_test(self):
         image2 = Image.new("RGB", (self.disp.width, self.disp.height), "WHITE")
@@ -88,7 +90,7 @@ class Muscot:
     class MockDisplay:
         def __init__(self):
             self.width = 240
-            self.height = 240
+            self.height = 135
             self.backlight = 50
 
         def Init(self):
@@ -106,24 +108,111 @@ class Muscot:
         def module_exit(self):
             logging.info("Mock display exiting.")
 
-    def show_text(self, content:str):
+    def show_text(self, content: str, width=20, fill_char='+'):
+        # Split the content by newline, justify each line, then rejoin
+        justified_lines = [line.rjust(width, fill_char) for line in content.split('\n')]
+        justified_text = '\n'.join(justified_lines)
+
+        # Create a new image for drawing the justified text
         image2 = Image.new("RGB", (self.disp.width, self.disp.height), "WHITE")
         draw = ImageDraw.Draw(image2)
-        draw.text((1, 1), content, font=self.Font2, fill="BLACK")
-        draw.text((1, 30), content, font=self.Font3, fill="BLACK")
-        draw.text((1, 60), content, font=self.Font4, fill="BLACK")
+
+        # Draw the justified text
+        draw.text((1, 1), justified_text, font=self.Font5, fill="BLACK")
         self.disp.ShowImage(image2)
+
+    def draw_moisture_bar(self,current_level):
+        pygame.init()
+        screen = pygame.display.set_mode((240, 240))
+        clock = pygame.time.Clock()
+
+        # Colors
+        gray = (128, 128, 128)
+        green_start = (144, 238, 144)
+        green_end = (0, 128, 0)
+        white = (255, 255, 255)
+
+        # Bar dimensions
+        bar_width = 20
+        bar_height = 150
+        bar_x = 50
+        bar_y = 30
+
+        # Draw background
+        screen.fill((255, 255, 255))
+
+        # Draw the gray background bar
+        pygame.draw.rect(screen, gray, pygame.Rect(bar_x, bar_y, bar_width, bar_height))
+
+        # Draw gradient
+        for i in range(20, 40):
+            color = [int(green_start[j] + (green_end[j] - green_start[j]) * (i - 20) / 20) for j in range(3)]
+            pygame.draw.rect(screen, color,
+                             pygame.Rect(bar_x, bar_y + bar_height * (100 - i) / 100, bar_width, bar_height / 100))
+
+        # Draw the current level as a white dash
+        pygame.draw.line(screen, white, (bar_x - 5, bar_y + bar_height - current_level * bar_height / 100),
+                         (bar_x + bar_width + 5, bar_y + bar_height - current_level * bar_height / 100), 3)
+
+        # Refresh the screen
+        pygame.display.flip()
+
+        # Keep the window open until closed
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+            clock.tick(60)
+
+    # Example usage:
+
+    def show_moist(self, moisture_level):
+        # Create a blank image
+        image = Image.new("RGB", (self.disp.width, self.disp.height), "WHITE")
+        draw = ImageDraw.Draw(image)
+
+        # Define bar dimensions
+        bar_x = 30
+        bar_y = 100
+        bar_width = 180
+        bar_height = 30
+        fill_width = int((moisture_level / 100) * bar_width)  # Calculate the width based on the percentage
+
+        # Draw the background of the bar
+        draw.rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height], outline="BLACK", fill="WHITE")
+
+        # Choose the color based on the moisture level
+        if 20 <= moisture_level <= 40:
+            fill_color = "GREEN"  # Optimal range
+        elif moisture_level < 20:
+            fill_color = "RED"  # Too dry
+        else:
+            fill_color = "BLUE"  # Too wet
+
+        # Draw the filled part of the bar
+        draw.rectangle([bar_x, bar_y, bar_x + fill_width, bar_y + bar_height], fill=fill_color)
+
+        # Add percentage text
+        draw.text((bar_x + bar_width + 10, bar_y), f"{moisture_level}%", font=self.Font3, fill="BLACK")
+
+        # Display the image on the screen
+        self.disp.ShowImage(image)
+
 
 # Main script execution
 if __name__ == "__main__":
     try:
+        text = "Темп: 25^C\nВол: 54%\nДо поливу: 10 днів"
         muscot = Muscot()
-        muscot.show_text("Hello Here")
+        muscot.show_text(text)
 
         # muscot.draw_test()
         muscot.wait()
+        muscot.show_moist(50)
         muscot.wait()
-        muscot.wait()
+        muscot.draw_moisture_bar(25)
 
         # muscot.image_test()
         # muscot.wait()
