@@ -1,108 +1,135 @@
-#usr/bin/python
-# -*- coding: UTF-8 -*-
-#import chardet
 import os
 import sys
 import time
 import logging
-import spidev as SPI
-#sys.path.append("..")
-from lib import LCD_1inch14
-from PIL import Image,ImageDraw,ImageFont
+import platform
 
+try:
+    import spidev as SPI
+    from lib import LCD_1inch14
+    from PIL import Image, ImageDraw, ImageFont
+except ImportError:
+    # Mock imports for Windows testing
+    from PIL import Image, ImageDraw, ImageFont
 
+# Platform detection
+IS_LINUX = platform.system() == "Linux"
+IS_WINDOWS = platform.system() == "Windows"
 
-# Raspberry Pi pin configuration:
-RST = 27
-DC = 25
-BL = 18
-bus = 0
-device = 0
 logging.basicConfig(level=logging.DEBUG)
 
 WAIT_SECONDS = 2
 
 
-def draw_test():
-    image2 = Image.new("RGB", (disp.width, disp.height), "WHITE")
-    draw = ImageDraw.Draw(image2)
+class Muscot:
+    def __init__(self):
+        # Raspberry Pi pin configuration:
+        if IS_LINUX:
+            self.RST = 27
+            self.DC = 25
+            self.BL = 18
+            self.bus = 0
+            self.device = 0
 
-    logging.info("draw point")
-    draw.rectangle((1, 1, 2, 2), fill="BLACK")
-    draw.rectangle((1, 7, 3, 10), fill="BLACK")
-    draw.rectangle((1, 13, 4, 17), fill="BLACK")
-    draw.rectangle((1, 19, 5, 24), fill="BLACK")
+            logging.info("Initializing LCD on Raspberry Pi.")
+            self.disp = LCD_1inch14.LCD_1inch14()  # Hardware SPI display
+            self.disp.Init()
+            self.disp.clear()
+            self.disp.bl_DutyCycle(50)
+        else:
+            logging.info("Simulating LCD display on Windows.")
+            self.disp = self.MockDisplay()
 
-    logging.info("draw line")
-    draw.line([(20, 1), (50, 31)], fill="RED", width=1)
-    draw.line([(50, 1), (20, 31)], fill="RED", width=1)
-    draw.line([(90, 17), (122, 17)], fill="RED", width=1)
-    draw.line([(106, 1), (106, 33)], fill="RED", width=1)
+        # Initialize fonts
+        self.Font1 = ImageFont.truetype("./Font/Font00.ttf", 30)
+        self.Font2 = ImageFont.truetype("./Font/Font00.ttf", 25)
+        self.Font3 = ImageFont.truetype("./Font/Font02.ttf", 25)
+        self.Font4 = ImageFont.truetype("./Font/Font03.ttf", 25)
+        self.Font5 = ImageFont.truetype("./Font/Font03.ttf", 25)
 
-    logging.info("draw rectangle")
-    draw.rectangle([(20, 1), (50, 31)], fill="WHITE", outline="BLUE")
-    draw.rectangle([(55, 1), (85, 31)], fill="BLUE")
+    def draw_test(self):
+        image2 = Image.new("RGB", (self.disp.width, self.disp.height), "WHITE")
+        draw = ImageDraw.Draw(image2)
 
-    logging.info("draw circle")
-    draw.arc((90, 1, 122, 33), 0, 360, fill=(0, 255, 0))
-    draw.ellipse((125, 1, 158, 33), fill=(0, 255, 0))
+        logging.info("Drawing shapes and text")
+        draw.rectangle((1, 1, 2, 2), fill="BLACK")
+        draw.rectangle((1, 7, 3, 10), fill="BLACK")
+        draw.rectangle((1, 13, 4, 17), fill="BLACK")
+        draw.rectangle((1, 19, 5, 24), fill="BLACK")
+        draw.line([(20, 1), (50, 31)], fill="RED", width=1)
+        draw.rectangle([(20, 1), (50, 31)], fill="WHITE", outline="BLUE")
+        draw.arc((90, 1, 122, 33), 0, 360, fill=(0, 255, 0))
 
-    logging.info("draw text")
-    draw.text((1, 45), u'Hellow WaveShare ✔️', font=Font2, fill="BLACK")
-    draw.text((90, 82), u'0123456789 🎉🎉', font=Font2, fill="RED")
-    draw.text((00, 85), u'你好微雪 🤗⛱️', font=Font3, fill="BLUE")
-    disp.ShowImage(image2)
+        draw.text((1, 45), u'Test1 ✔️', font=self.Font2, fill="BLACK")
+        draw.text((90, 82), u'Test2 🎉🎉', font=self.Font2, fill="RED")
+        draw.text((0, 85), u'Test3 🤗⛱️', font=self.Font3, fill="BLUE")
 
-def image_test():
-    logging.info("show image")
-    image = Image.open('./pic/LCD_1inch14.jpg')
-    disp.ShowImage(image)
+        self.disp.ShowImage(image2)
 
-def bright_test():
-    for x in range(0,100):
-        disp.bl_DutyCycle(x)
-        time.sleep(0.2)
-    disp.bl_DutyCycle(50)
+    def image_test(self):
+        logging.info("Displaying image.")
+        image = Image.open('./pic/LCD_1inch14.jpg')
+        self.disp.ShowImage(image)
 
-def wait(seconds = WAIT_SECONDS):
-    time.sleep(WAIT_SECONDS)
+    def bright_test(self):
+        for x in range(0, 100):
+            self.disp.bl_DutyCycle(x)
+            time.sleep(0.2)
+        self.disp.bl_DutyCycle(50)
 
-try:
-    # display with hardware SPI:
-    ''' Warning!!!Don't  creation of multiple displayer objects!!! '''
-    #disp = LCD_1inch14.LCD_1inch14(spi=SPI.SpiDev(bus, device),spi_freq=10000000,rst=RST,dc=DC,bl=BL)
-    disp = LCD_1inch14.LCD_1inch14()
-    # Initialize library.
-    disp.Init()
-    # Clear display.
-    disp.clear()
-    #Set the backlight to 100
-    disp.bl_DutyCycle(50)
+    def wait(self, seconds=WAIT_SECONDS):
+        time.sleep(seconds)
 
-    # Create blank image for drawing.
+    def cleanup(self):
+        logging.info("Exiting...")
+        self.disp.module_exit()
 
-    Font1 = ImageFont.truetype("./Font/Font00.ttf",30)
-    Font2 = ImageFont.truetype("./Font/Font00.ttf",25)
-    Font3 = ImageFont.truetype("./Font/Font02.ttf",25)
+    # Mock display class for Windows testing
+    class MockDisplay:
+        def __init__(self):
+            self.width = 240
+            self.height = 240
+            self.backlight = 50
 
+        def Init(self):
+            logging.info("Mock display initialized.")
 
-    draw_test()
-    wait()
-    image_test()
-    wait()
-    bright_test()
-    wait()
+        def clear(self):
+            logging.info("Mock display cleared.")
 
-    disp.module_exit()
-    logging.info("quit:")
-except IOError as e:
-    logging.info(e)
-except KeyboardInterrupt:
-    disp.module_exit()
-    logging.info("quit:")
-    exit()
+        def ShowImage(self, image):
+            image.show()  # Show the image on the screen using PIL's viewer (Windows)
 
+        def bl_DutyCycle(self, duty):
+            logging.info(f"Mock backlight set to {duty}%.")
 
+        def module_exit(self):
+            logging.info("Mock display exiting.")
 
+    def show_text(self, content:str):
+        image2 = Image.new("RGB", (self.disp.width, self.disp.height), "WHITE")
+        draw = ImageDraw.Draw(image2)
+        draw.text((1, 1), content, font=self.Font2, fill="BLACK")
+        draw.text((1, 30), content, font=self.Font3, fill="BLACK")
+        draw.text((1, 60), content, font=self.Font4, fill="BLACK")
+        self.disp.ShowImage(image2)
 
+# Main script execution
+if __name__ == "__main__":
+    try:
+        muscot = Muscot()
+        muscot.show_text("Hello Here")
 
+        # muscot.draw_test()
+        muscot.wait()
+        muscot.wait()
+        muscot.wait()
+
+        # muscot.image_test()
+        # muscot.wait()
+        # muscot.bright_test()
+        # muscot.wait()
+    except IOError as e:
+        logging.error(e)
+    except KeyboardInterrupt:
+        logging.info("User interrupted. Exiting...")
