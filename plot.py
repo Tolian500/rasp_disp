@@ -1,66 +1,65 @@
-from PIL import Image, ImageDraw, ImageFont
-import matplotlib.pyplot as plt
-import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+import time
+from disp_manager import Display
 from PIL import Image
-from io import BytesIO
 
-class MockLCD:
-    def __init__(self):
-        self.width = 240
-        self.height = 240
-        self.image = Image.new("RGB", (self.width, self.height), "WHITE")
-        self.draw = ImageDraw.Draw(self.image)
+d = Display()
 
-    def Init(self):
-        print("Mock display initialized.")
+def wait(sec: float = 4):
+    time.sleep(sec)
 
-    def clear(self):
-        self.image = Image.new("RGB", (self.width, self.height), "WHITE")
-        self.draw = ImageDraw.Draw(self.image)
+def plot_unscaled(df):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df['Timestamp'], y=df['Temp'], mode='lines', name='Temp'))
+    fig.add_trace(go.Scatter(x=df['Timestamp'], y=df['Moist'], mode='lines', name='Moist'))
 
-    def bl_DutyCycle(self, value):
-        print(f"Backlight set to {value}%")
+    fig.update_layout(title='Temperature and Moisture Level Over Time',
+                      xaxis_title='Timestamp',
+                      yaxis_title='Value',
+                      legend_title='Legend')
 
-    def ShowImage(self, image):
-        image.show()  # Using PIL's built-in image viewer
+    # Save the figure as a PNG file
+    fig.write_image("plot_unscaled.png")
 
-    def module_exit(self):
-        print("Mock display cleanup completed.")
+    # Show the figure on the LCD display
+    show_on_display("plot_unscaled.png")
 
-# Usage in your script
+def plot_scaled(df):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df['Timestamp'], y=df['Moist'], mode='lines', name='Moisture Level', yaxis='y1'))
+    fig.add_trace(go.Scatter(x=df['Timestamp'], y=df['Temp'], mode='lines', name='Temperature (°C)', yaxis='y2'))
+
+    fig.update_layout(
+        title='Temperature and Moisture Level Over Time',
+        xaxis_title='Timestamp',
+        yaxis=dict(title='Moisture Level (%)', range=[0, 100], titlefont=dict(color='#1f77b4'), tickfont=dict(color='#1f77b4')),
+        yaxis2=dict(title='Temperature (°C)', range=[0, 40], titlefont=dict(color='#ff7f0e'), tickfont=dict(color='#ff7f0e'),
+                    overlaying='y', side='right'),
+        legend_title='Legend'
+    )
+
+    # Save the figure as a PNG file
+    fig.write_image("plot_scaled.png")
+
+    # Show the figure on the LCD display
+    show_on_display("plot_scaled.png")
+
+def show_on_display(image_path):
+    # Open the image
+    image = Image.open(image_path)
+
+    # Display it using the Display class
+    d.disp.ShowImage(image.convert("RGB"))
+
+def main():
+    df = pd.read_csv("garden_data_cleaned.csv")
+
+    plot_unscaled(df)
+    wait()
+
+    plot_scaled(df)
+    wait()
+
 if __name__ == "__main__":
-    try:
-        # Use the mock class instead of the actual display class
-        disp = MockLCD()
-        disp.Init()
-        disp.clear()
-        disp.bl_DutyCycle(50)
-
-        # Generate a plot
-        x = np.linspace(0, 10, 100)
-        y = np.sin(x)
-        plt.figure(figsize=(2.4, 2.4), dpi=100)  # Set figure size and resolution
-        plt.plot(x, y)
-        plt.title("Sine Wave")
-
-        # Save plot to a BytesIO object
-        buf = BytesIO()
-        plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
-        buf.seek(0)
-        plt.close()
-
-        # Load image from BytesIO
-        image = Image.open(buf)
-        image = image.resize((disp.width, disp.height))  # Resize to fit display
-        disp.ShowImage(image)
-
-        input("Press Enter to continue...")
-
-        disp.module_exit()
-
-    except IOError as e:
-        print(e)
-    except KeyboardInterrupt:
-        disp.module_exit()
-        print("quit:")
-        exit()
+    main()

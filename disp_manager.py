@@ -5,6 +5,11 @@ import logging
 import platform
 import sys
 
+
+# Get the directory of the current script (disp_manager.py)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+
 try:
     import spidev as SPI
     from lib import LCD_1inch14
@@ -42,13 +47,20 @@ class Display:
             self.disp = self.MockDisplay()
 
         # Initialize fonts
-        self.Font1 = ImageFont.truetype("./Font/Font00.ttf", 30)
-        self.Font2 = ImageFont.truetype("./Font/Font01.ttf", 25)
-        self.Font3 = ImageFont.truetype("./Font/Font02.ttf", 25)
-        self.Font4 = ImageFont.truetype("./Font/Font03.ttf", 20)
-        self.Font5 = ImageFont.truetype("./Font/Font04.ttf", 22)
-        self.Font6 = ImageFont.truetype("./Font/OrbitronM.ttf", 22)
-        self.Font7 = ImageFont.truetype("./Font/OrbitronSB.ttf", 18)
+        font_path = os.path.join(current_dir, 'Font', 'Font00.ttf')
+        self.Font1 = ImageFont.truetype(font_path, 30)
+        font_path = os.path.join(current_dir, 'Font', 'Font00.ttf')
+        self.Font2 = ImageFont.truetype(font_path, 25)
+        font_path = os.path.join(current_dir, 'Font', 'Font00.ttf')
+        self.Font3 = ImageFont.truetype(font_path, 25)
+        font_path = os.path.join(current_dir, 'Font', 'Font00.ttf')
+        self.Font4 = ImageFont.truetype(font_path, 20)
+        font_path = os.path.join(current_dir, 'Font', 'Font00.ttf')
+        self.Font5 = ImageFont.truetype(font_path, 22)
+        font_path = os.path.join(current_dir, 'Font', 'OrbitronM.ttf')
+        self.Font6 = ImageFont.truetype(font_path, 22)
+        font_path = os.path.join(current_dir, 'Font', 'OrbitronSB.ttf')
+        self.Font7 = ImageFont.truetype(font_path, 18)
 
     def draw_test(self):
         image2 = Image.new("RGB", (self.disp.width, self.disp.height), "WHITE")
