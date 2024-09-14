@@ -5,8 +5,6 @@ from disp_manager import Display
 from PIL import Image
 from datetime import timedelta
 
-d = Display()
-
 # Define the margin as a percentage (e.g., 10%)
 X_AXIS_MARGIN_PERCENT = 10 / 100  # 10%
 
@@ -14,6 +12,7 @@ X_AXIS_MARGIN_PERCENT = 10 / 100  # 10%
 TITLE_FONT_SIZE = 45
 AXIS_TITLE_FONT_SIZE = 15
 TICK_LABEL_FONT_SIZE = 30
+
 
 def resize_image_to_display(image_path, output_path):
     # Open the image
@@ -30,7 +29,7 @@ def wait(sec: float = 4):
     time.sleep(sec)
 
 
-def plot_scatter(df, scaled=True, last_n_hours=None, smoothing=0):
+def plot_scatter(display: Display(), df, scaled=True, last_n_hours=None, smoothing=0):
     # Convert 'Timestamp' to datetime if it's not already
     df['Timestamp'] = pd.to_datetime(df['Timestamp'])
 
@@ -143,11 +142,10 @@ def plot_scatter(df, scaled=True, last_n_hours=None, smoothing=0):
     resize_image_to_display("plot_scaled_large.png", "plot_scaled.png")
 
     # Show the image on the display
-    show_on_display("plot_scaled.png")
+    show_on_display("plot_scaled.png", display)
 
 
-
-def show_on_display(image_path):
+def show_on_display(image_path, d: Display):
     # Open the image
     image = Image.open(image_path)
 
