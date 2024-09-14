@@ -29,7 +29,7 @@ def wait(sec: float = 4):
     time.sleep(sec)
 
 
-def plot_scatter(display: Display(), df, scaled=True, last_n_hours=None, smoothing=0):
+def plot_scatter(df, scaled=True, last_n_hours=None, smoothing=0):
     # Convert 'Timestamp' to datetime if it's not already
     df['Timestamp'] = pd.to_datetime(df['Timestamp'])
 
@@ -141,8 +141,10 @@ def plot_scatter(display: Display(), df, scaled=True, last_n_hours=None, smoothi
     # Resize the image to the display size
     resize_image_to_display("plot_scaled_large.png", "plot_scaled.png")
 
-    # Show the image on the display
-    show_on_display("plot_scaled.png", display)
+    # # Show the image on the display
+    # show_on_display("plot_scaled.png")
+
+    return "plot_scaled.png"
 
 
 def show_on_display(image_path, d: Display):

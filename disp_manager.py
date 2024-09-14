@@ -220,6 +220,16 @@ class Display:
         # Display the image
         self.disp.ShowImage(image)
 
+    def show_on_display(self, image_path):
+        # Open the image
+        image = Image.open(image_path)
+
+        # Display it using the Display class
+        self.disp.ShowImage(image.convert("RGB"))
+
+
+
+
     def show_moisture_with_text(self, current_level, text):
         # Create a new blank image with the screen size
         image = Image.new("RGBA", (240, 135), (39, 39, 39, 39))
