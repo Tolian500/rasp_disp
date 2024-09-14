@@ -1,22 +1,19 @@
 import os
-import sys
 import time
 import logging
 import platform
-import sys
-
+from PIL import Image, ImageDraw, ImageFont
 
 # Get the directory of the current script (disp_manager.py)
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
-
 try:
     import spidev as SPI
     from lib import LCD_1inch14
-    from PIL import Image, ImageDraw, ImageFont
 except ImportError:
     # Mock imports for Windows testing
-    from PIL import Image, ImageDraw, ImageFont
+    class LCD_1inch14:
+        pass
 
 # Platform detection
 IS_LINUX = platform.system() == "Linux"
@@ -47,24 +44,20 @@ class Display:
             self.disp = self.MockDisplay()
 
         # Initialize fonts
-        font_path = os.path.join(current_dir, 'Font', 'Font00.ttf')
-        self.Font1 = ImageFont.truetype(font_path, 30)
-        font_path = os.path.join(current_dir, 'Font', 'Font00.ttf')
-        self.Font2 = ImageFont.truetype(font_path, 25)
-        font_path = os.path.join(current_dir, 'Font', 'Font00.ttf')
-        self.Font3 = ImageFont.truetype(font_path, 25)
-        font_path = os.path.join(current_dir, 'Font', 'Font00.ttf')
-        self.Font4 = ImageFont.truetype(font_path, 20)
-        font_path = os.path.join(current_dir, 'Font', 'Font00.ttf')
-        self.Font5 = ImageFont.truetype(font_path, 22)
-        font_path = os.path.join(current_dir, 'Font', 'OrbitronM.ttf')
-        self.Font6 = ImageFont.truetype(font_path, 22)
-        font_path = os.path.join(current_dir, 'Font', 'OrbitronSB.ttf')
-        self.Font7 = ImageFont.truetype(font_path, 18)
+        self.load_fonts()
+
+    def load_fonts(self):
+        self.Font1 = ImageFont.truetype(os.path.join(current_dir, 'Font', 'Font00.ttf'), 30)
+        self.Font2 = ImageFont.truetype(os.path.join(current_dir, 'Font', 'Font01.ttf'), 25)
+        self.Font3 = ImageFont.truetype(os.path.join(current_dir, 'Font', 'Font02.ttf'), 25)
+        self.Font4 = ImageFont.truetype(os.path.join(current_dir, 'Font', 'Font03.ttf'), 20)
+        self.Font5 = ImageFont.truetype(os.path.join(current_dir, 'Font', 'Font04.ttf'), 22)
+        self.Font6 = ImageFont.truetype(os.path.join(current_dir, 'Font', 'OrbitronM.ttf'), 22)
+        self.Font7 = ImageFont.truetype(os.path.join(current_dir, 'Font', 'OrbitronSB.ttf'), 18)
 
     def draw_test(self):
-        image2 = Image.new("RGB", (self.disp.width, self.disp.height), "WHITE")
-        draw = ImageDraw.Draw(image2)
+        image = Image.new("RGB", (self.disp.width, self.disp.height), "WHITE")
+        draw = ImageDraw.Draw(image)
 
         logging.info("Drawing shapes and text")
         draw.rectangle((1, 1, 2, 2), fill="BLACK")
@@ -79,7 +72,7 @@ class Display:
         draw.text((90, 82), u'Test2 🎉🎉', font=self.Font2, fill="RED")
         draw.text((0, 85), u'Test3 🤗⛱️', font=self.Font3, fill="BLUE")
 
-        self.disp.ShowImage(image2)
+        self.disp.ShowImage(image)
 
     def image_test(self):
         logging.info("Displaying image.")
@@ -130,18 +123,31 @@ class Display:
         def module_exit(self):
             logging.info("Mock display exiting.")
 
-    def show_text(self, content: str, width=5, fill_char='+', color="BLACK"):
-        # Split the content by newline, justify each line, then rejoin
-        justified_lines = [line.rjust(width, fill_char) for line in content.split('\n')]
-        justified_text = '\n'.join(justified_lines)
+    def show_text(self, content: str, font_size=None, color="WHITE"):
+        # Use default font size if none is provided
+        if font_size is None:
+            font_size = 22  # Default font size
 
-        # Create a new image for drawing the justified text
-        image2 = Image.new("RGB", (self.disp.width, self.disp.height), "WHITE")
-        draw = ImageDraw.Draw(image2)
+        # Create a new image for drawing the text
+        image = Image.new("RGB", (self.disp.width, self.disp.height), (39, 39, 39, 39))
+        draw = ImageDraw.Draw(image)
 
-        # Draw the justified text
-        draw.text((1, 1), justified_text, font=self.Font5, fill=color)
-        self.disp.ShowImage(image2)
+        # Load the font with the specified size
+        try:
+            font = ImageFont.truetype(os.path.join(current_dir, 'Font', 'OrbitronM.ttf'), font_size)
+        except IOError:
+            font = ImageFont.load_default()  # Fallback if specified font is not available
+
+        # Calculate text size and position
+        bbox = draw.textbbox((0, 0), content, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        x = (self.disp.width - text_width) / 2
+        y = (self.disp.height - text_height) / 2
+
+        # Draw the text centered
+        draw.text((x, y), content, font=font, fill=color)
+        self.disp.ShowImage(image)
 
     def draw_moisture_bar(self, current_level):
         # Define margins
@@ -163,7 +169,7 @@ class Display:
         # Draw the background of the moisture bar with a gradient from light brown to light blue
         self.draw_gradient(draw, bar_x, bar_y, bar_x + bar_width, bar_y + bar_height,
                            start_color=(22, 98, 125),
-                           end_color=(125, 140, 139))  # Light brown to light blue (210, 180, 140)
+                           end_color=(125, 140, 139))  # Light brown to light blue
 
         # Optimal range (20% - 40%) with green lines
         good_top = bar_y + (100 - 40) * bar_height // 100
@@ -193,38 +199,25 @@ class Display:
             # Draw a horizontal line with the calculated color
             draw.line([(x1, y1 + i), (x2, y1 + i)], fill=color)
 
-            # Example usage:
-
     def show_hor_bar(self, moisture_level):
         # Create a blank image
         image = Image.new("RGB", (self.disp.width, self.disp.height), "WHITE")
         draw = ImageDraw.Draw(image)
 
-        # Define bar dimensions
-        bar_x = 30
-        bar_y = 100
-        bar_width = 180
-        bar_height = 30
-        fill_width = int((moisture_level / 100) * bar_width)  # Calculate the width based on the percentage
+        # Define the size and position of the bar
+        bar_width = 200
+        bar_height = 20
+        bar_x = (self.disp.width - bar_width) // 2
+        bar_y = (self.disp.height - bar_height) // 2
 
         # Draw the background of the bar
-        draw.rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height], outline="BLACK", fill="WHITE")
+        draw.rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height], fill=(255, 255, 255), outline=(0, 0, 0))
 
-        # Choose the color based on the moisture level
-        if 20 <= moisture_level <= 40:
-            fill_color = "GREEN"  # Optimal range
-        elif moisture_level < 20:
-            fill_color = "RED"  # Too dry
-        else:
-            fill_color = "BLUE"  # Too wet
+        # Draw the current moisture level on the bar
+        moisture_width = (moisture_level / 100) * bar_width
+        draw.rectangle([bar_x, bar_y, bar_x + moisture_width, bar_y + bar_height], fill=(0, 0, 255))
 
-        # Draw the filled part of the bar
-        draw.rectangle([bar_x, bar_y, bar_x + fill_width, bar_y + bar_height], fill=fill_color)
-
-        # Add percentage text
-        draw.text((bar_x + bar_width + 10, bar_y), f"{moisture_level}%", font=self.Font3, fill="BLACK")
-
-        # Display the image on the screen
+        # Display the image
         self.disp.ShowImage(image)
 
     def show_moisture_with_text(self, current_level, text):
@@ -273,11 +266,13 @@ class Display:
 if __name__ == "__main__":
     try:
         curent_moist = 50
-        muscot = Display()
-        # muscot.show_text(f"Current moist: {curent_moist}")
-        # muscot.draw_moisture_bar(curent_moist)
-        muscot.show_moisture_with_text(35, f"Status: Too wet\nTemp: 20°C \nMoist:  {curent_moist}%\nNext water:\nIn 2 Hours")
-        time.sleep(10)
+        display = Display()
+        # display.show_text(f"Current moist: {curent_moist}")
+        # display.draw_moisture_bar(curent_moist)
+        display.show_moisture_with_text(35, f"Status: Too wet\nTemp: 20°C \nMoist:  {curent_moist}%\nNext water:\nIn 2 Hours")
+        # time.sleep(10)
+        display.show_text("hello world")
+
 
     except IOError as e:
         logging.error(e)
